@@ -1,0 +1,12 @@
+{
+  "gfhd": {
+    "name": "gfhd",
+    "pattern": "Desktop2.jpg",
+    "font": "Cornerita Black.ttf",
+    "data_font": "Cormorant-Regular.ttf",
+    "font_size_normal": 18,
+    "data_font_size_normal": 16,
+    "convert_photo_to_bw": true,
+    "convert_pattern_to_bw": false
+  }
+}

@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Система управления профилями</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .navbar-brand { font-weight: bold; }
+        .tab-pane { padding: 20px 0; }
+        .preview-image { max-width: 100%; border: 1px solid #ddd; border-radius: 4px; }
+        .required:after { content: " *"; color: red; }
+        .action-buttons { white-space: nowrap; }
+        .template-card { transition: transform 0.2s; }
+        .template-card:hover { transform: translateY(-2px); }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-id-card"></i> Система управления профилями
+            </a>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button" role="tab" aria-controls="home" aria-selected="true">
+                    <i class="fas fa-plus-circle"></i> Создание профиля
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="admin-tab" data-bs-toggle="tab" data-bs-target="#admin" type="button" role="tab" aria-controls="admin" aria-selected="false">
+                    <i class="fas fa-cogs"></i> Администрирование
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="templates-tab" data-bs-toggle="tab" data-bs-target="#templates" type="button" role="tab" aria-controls="templates" aria-selected="false">
+                    <i class="fas fa-palette"></i> Шаблоны
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="myTabContent">
+            <!-- Вкладка создания профиля -->
+            <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4>Данные профиля</h4>
+                        <form id="profile-form">
+                            <div class="mb-3">
+                                <label for="full-name" class="form-label required">ФИО</label>
+                                <input type="text" class="form-control" id="full-name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="organization" class="form-label">Организация</label>
+                                <input type="text" class="form-control" id="organization">
+                            </div>
+                            <div class="mb-3">
+                                <label for="department" class="form-label">Отдел</label>
+                                <input type="text" class="form-control" id="department">
+                            </div>
+                            <div class="mb-3">
+                                <label for="expiration-date" class="form-label">Срок действия</label>
+                                <input type="text" class="form-control" id="expiration-date" placeholder="ДД.ММ.ГГГГ">
+                                <div class="form-text">Оставьте пустым для бессрочного профиля</div>
+                                <button type="button" class="btn btn-outline-secondary btn-sm mt-1" onclick="set30Days()">+30 дней</button>
+                            </div>
+
+                            <h5 class="mt-4">Настройки отображения</h5>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="convert-photo-bw" checked>
+                                <label class="form-check-label" for="convert-photo-bw">
+                                    Конвертировать фото в Ч/Б
+                                </label>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="convert-pattern-bw">
+                                <label class="form-check-label" for="convert-pattern-bw">
+                                    Конвертировать паттерн в Ч/Б
+                                </label>
+                            </div>
+
+                            <h5 class="mt-4">Стиль профиля</h5>
+                            <div class="mb-3">
+                                <select class="form-select" id="template-select">
+                                    <option value="default">По умолчанию</option>
+                                </select>
+                            </div>
+
+                            <h5 class="mt-4">Фото профиля</h5>
+                            <div class="mb-3">
+                                <input type="file" class="form-control" id="photo" accept="image/*">
+                            </div>
+
+                            <div class="mb-3">
+                                <button type="button" class="btn btn-success" onclick="createProfile()">
+                                    <i class="fas fa-save"></i> Создать профиль
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h4>Предпросмотр</h4>
+                        <div id="preview-container" class="text-center">
+                            <p class="text-muted">Заполните данные профиля для предпросмотра</p>
+                            <img id="preview-image" class="preview-image" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Вкладка администрирования -->
+            <div class="tab-pane fade" id="admin" role="tabpanel" aria-labelledby="admin-tab">
+                <div class="container mt-4">
+                    <h3>Администрирование профилей</h3>
+                    
+                    <!-- Поиск профилей -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="search-profiles" placeholder="Поиск по ID или ФИО...">
+                                <button class="btn btn-outline-secondary" type="button" onclick="searchProfiles()">
+                                    <i class="fas fa-search"></i> Поиск
+                                </button>
+                                <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
+                                    <i class="fas fa-times"></i> Очистить
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <div class="badge bg-primary fs-6">
+                                Всего профилей: <span id="profiles-count">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Таблица профилей -->
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>ФИО</th>
+                                    <th>Организация</th>
+                                    <th>Отдел</th>
+                                    <th>Дата создания</th>
+                                    <th>Срок действия</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="profiles-tbody">
+                                <!-- Профили будут загружены здесь -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Модальное окно редактирования профиля -->
+                    <div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="editProfileModalLabel">Редактирование профиля</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <form id="edit-profile-form">
+                                        <input type="hidden" id="edit-user-id">
+                                        
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <label for="edit-full-name" class="form-label required">ФИО</label>
+                                                <input type="text" class="form-control" id="edit-full-name" required>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="edit-expiration-date" class="form-label">Срок действия</label>
+                                                <input type="text" class="form-control" id="edit-expiration-date" placeholder="ДД.ММ.ГГГГ">
+                                                <div class="form-text">Оставьте пустым для бессрочного профиля</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <label for="edit-organization" class="form-label">Организация</label>
+                                                <input type="text" class="form-control" id="edit-organization">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="edit-department" class="form-label">Отдел</label>
+                                                <input type="text" class="form-control" id="edit-department">
+                                            </div>
+                                        </div>
+
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label">Стиль профиля</label>
+                                                <select class="form-select" id="edit-template-select">
+                                                    <option value="default">По умолчанию</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Фото</label>
+                                                <input type="file" class="form-control" id="edit-photo" accept="image/*">
+                                                <div class="form-text">Новое фото заменит текущее</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="edit-convert-photo-bw" checked>
+                                                    <label class="form-check-label" for="edit-convert-photo-bw">
+                                                        Конвертировать фото в Ч/Б
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="edit-convert-pattern-bw">
+                                                    <label class="form-check-label" for="edit-convert-pattern-bw">
+                                                        Конвертировать паттерн в Ч/Б
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div id="edit-preview-container" class="text-center mb-3">
+                                            <img id="edit-preview-image" class="img-fluid" style="max-height: 300px;">
+                                        </div>
+                                    </form>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                    <button type="button" class="btn btn-primary" onclick="updateProfile()">
+                                        <i class="fas fa-save"></i> Сохранить изменения
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Модальное окно восстановления профиля -->
+                    <div class="modal fade" id="recoverProfileModal" tabindex="-1" aria-labelledby="recoverProfileModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="recoverProfileModalLabel">Восстановление профиля</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <form id="recover-profile-form">
+                                        <input type="hidden" id="recover-user-id">
+                                        
+                                        <div class="row mb-3">
+                                            <div class="col-md-12">
+                                                <div class="alert alert-info">
+                                                    <i class="fas fa-info-circle"></i> При восстановлении можно изменить стиль профиля и загрузить новое фото
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label">Стиль профиля</label>
+                                                <select class="form-select" id="recover-template-select">
+                                                    <option value="default">По умолчанию</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Новое фото</label>
+                                                <input type="file" class="form-control" id="recover-photo" accept="image/*">
+                                                <div class="form-text">Оставьте пустым, чтобы использовать текущее фото</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="recover-convert-photo-bw" checked>
+                                                    <label class="form-check-label" for="recover-convert-photo-bw">
+                                                        Конвертировать фото в Ч/Б
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="recover-convert-pattern-bw">
+                                                    <label class="form-check-label" for="recover-convert-pattern-bw">
+                                                        Конвертировать паттерн в Ч/Б
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div id="recover-preview-container" class="text-center mb-3">
+                                            <img id="recover-preview-image" class="img-fluid" style="max-height: 300px;">
+                                        </div>
+                                    </form>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                    <button type="button" class="btn btn-warning" onclick="recoverProfile()">
+                                        <i class="fas fa-redo"></i> Восстановить профиль
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Модальное окно удаления профиля -->
+                    <div class="modal fade" id="deleteProfileModal" tabindex="-1" aria-labelledby="deleteProfileModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="deleteProfileModalLabel">Удаление профиля</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p>Вы уверены, что хотите удалить профиль <strong id="delete-profile-name"></strong>?</p>
+                                    <p class="text-danger"><small>Это действие нельзя отменить.</small></p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                    <button type="button" class="btn btn-danger" id="confirm-delete-btn">
+                                        <i class="fas fa-trash"></i> Удалить
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Вкладка шаблонов -->
+            <div class="tab-pane fade" id="templates" role="tabpanel" aria-labelledby="templates-tab">
+                <div class="container mt-4">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h4>Создать новый шаблон</h4>
+                            <form id="template-form">
+                                <div class="mb-3">
+                                    <label for="template-name" class="form-label">Название шаблона</label>
+                                    <input type="text" class="form-control" id="template-name" required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="template-pattern" class="form-label">Паттерн</label>
+                                    <select class="form-select" id="template-pattern" required>
+                                        <option value="">Выберите паттерн</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="template-font" class="form-label">Шрифт заголовков</label>
+                                    <select class="form-select" id="template-font" required>
+                                        <option value="">Выберите шрифт</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="template-data-font" class="form-label">Шрифт данных</label>
+                                    <select class="form-select" id="template-data-font">
+                                        <option value="">То же, что и для заголовков</option>
+                                    </select>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="template-font-size" class="form-label">Размер шрифта заголовков</label>
+                                        <input type="number" class="form-control" id="template-font-size" value="18" min="8" max="72">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="template-data-font-size" class="form-label">Размер шрифта данных</label>
+                                        <input type="number" class="form-control" id="template-data-font-size" value="16" min="8" max="72">
+                                    </div>
+                                </div>
+
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="template-convert-photo-bw" checked>
+                                    <label class="form-check-label" for="template-convert-photo-bw">
+                                        Конвертировать фото в Ч/Б
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="template-convert-pattern-bw">
+                                    <label class="form-check-label" for="template-convert-pattern-bw">
+                                        Конвертировать паттерн в Ч/Б
+                                    </label>
+                                </div>
+
+                                <button type="button" class="btn btn-primary" onclick="saveTemplate()">
+                                    <i class="fas fa-save"></i> Сохранить шаблон
+                                </button>
+                            </form>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h4>Предпросмотр шаблона</h4>
+                            <div id="template-preview-container" class="text-center mb-4">
+                                <p class="text-muted">Выберите шаблон для предпросмотра</p>
+                                <img id="template-preview-image" class="preview-image" style="display: none;">
+                            </div>
+
+                            <h4>Существующие шаблоны</h4>
+                            <div id="templates-list">
+                                <!-- Список шаблонов будет здесь -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Алерт для уведомлений -->
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+        <div id="liveAlert" class="alert" role="alert" style="display: none;"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="text/javascript" src="/eel.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
